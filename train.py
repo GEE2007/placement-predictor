@@ -1,21 +1,24 @@
 import pandas as pd
 import joblib
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 
-data = {
-    "CGPA": [9.2, 7.5, 6.8, 8.7, 5.9, 8.0, 6.2, 7.9],
-    "Projects": [3, 1, 1, 2, 0, 2, 1, 2],
-    "Internship": [1, 0, 0, 1, 0, 1, 0, 1],
-    "Skills": [8, 5, 4, 7, 3, 6, 4, 7],
-    "Placed": [1, 0, 0, 1, 0, 1, 0, 1]
-}
+df = pd.read_csv("data/student_placement.csv")
 
-df = pd.DataFrame(data)
-print(df)
-X = df[["CGPA", "Projects", "Internship", "Skills"]]
-y = df["Placed"]
-model = LogisticRegression()
-model.fit(X, y)
+X = df[['cgpa', 'projects_count', 'internships', 'coding_skills', 'dsa_score', 'communication_skills']]
+y = df['placement_status']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, random_state=42
+)
+
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train, y_train)
+
+pred = model.predict(X_test)
+print("Accuracy:", accuracy_score(y_test, pred))
+
 joblib.dump(model, "model.pkl")
 
-print("Model trained and saved successfully 🚀")
+print("Model trained and saved 🚀")
