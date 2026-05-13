@@ -6,7 +6,7 @@ from sklearn.metrics import accuracy_score
 
 df = pd.read_csv("data/student_placement.csv")
 
-X = df[['cgpa', 'projects_count', 'internships', 'coding_skills', 'dsa_score', 'communication_skills']]
+X = df[['cgpa', 'internships', 'projects_count', 'coding_skills', 'certifications', 'aptitude_score']]
 y = df['placement_status']
 
 X_train, X_test, y_train, y_test = train_test_split(
