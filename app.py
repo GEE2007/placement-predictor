@@ -2,6 +2,55 @@ import streamlit as st
 import joblib
 import numpy as np
 import pandas as pd
+from io import BytesIO
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
+def create_pdf_report(resume_score, adjusted_prob, placement_status,
+                       cgpa, internships, projects, certifications,
+                       aptitude_score, selected_skills, recommendations):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    styles = getSampleStyleSheet()
+    story = []
+
+    title_style = ParagraphStyle('Title', parent=styles['Title'],
+                                  textColor=colors.HexColor('#2563eb'), fontSize=20)
+    story.append(Paragraph("🎯 Placement Readiness Report", title_style))
+    story.append(Spacer(1, 12))
+
+    story.append(Paragraph(f"<b>Resume Score:</b> {resume_score}/100", styles['Normal']))
+    story.append(Paragraph(f"<b>Placement Probability:</b> {adjusted_prob:.1%}", styles['Normal']))
+    story.append(Paragraph(f"<b>Status:</b> {placement_status}", styles['Normal']))
+    story.append(Spacer(1, 12))
+
+    data = [["Metric", "Value"],
+            ["CGPA", cgpa], ["Internships", internships],
+            ["Projects", projects], ["Certifications", certifications],
+            ["Aptitude Score", aptitude_score],
+            ["Skills", ", ".join(selected_skills) or "None"]]
+    
+    table = Table(data, colWidths=[200, 250])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563eb')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f4ff')]),
+    ]))
+    story.append(table)
+    story.append(Spacer(1, 12))
+
+    if recommendations:
+        story.append(Paragraph("<b>Recommendations:</b>", styles['Normal']))
+        for rec in recommendations:
+            story.append(Paragraph(rec, styles['Normal']))
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.read()
 
 st.set_page_config(
     page_title="Placement Predictor",
@@ -115,65 +164,56 @@ st.markdown("""
         border-radius: 1rem;
         background: var(--panel);
     }
-    /* All labels like CGPA, Projects etc */
-    /* Outside labels like CGPA, Projects */
-label[data-testid="stWidgetLabel"] p,
-label[data-testid="stWidgetLabel"] span,
-label[data-testid="stWidgetLabel"] div {
+    
+    label[data-testid="stWidgetLabel"] p,
+    label[data-testid="stWidgetLabel"] span,
+    label[data-testid="stWidgetLabel"] div {
     color: #111827 !important;
     font-weight: 600 !important;
-}
+    }
 
-/* Input boxes background dark */
-input, textarea {
+    input, textarea {
     background-color: #111827 !important;
     color: white !important;
     border-radius: 8px !important;
-}
+    }
 
-/* Number input arrows area */
-[data-baseweb="input"] {
+    [data-baseweb="input"] {
     background-color: #111827 !important;
     color: white !important;
-}
+    }
 
-/* Multiselect main box */
-[data-baseweb="select"] {
+    [data-baseweb="select"] {
     background-color: #111827 !important;
     color: white !important;
-}
+    }
 
-/* Selected skill tags */
-[data-baseweb="tag"] {
+    [data-baseweb="tag"] {
     background-color: #2563eb !important;
     color: white !important;
-}
+    }
 
-/* Dropdown menu options */
-ul[role="listbox"] li {
+    ul[role="listbox"] li {
     background-color: #111827 !important;
     color: white !important;
-}
+    }
 
-/* Placeholder text */
-input::placeholder {
+    input::placeholder {
     color: #cbd5e1 !important;
-}
-/* Metric titles like CGPA, Projects */
-[data-testid="stMetricLabel"] {
+    }
+
+    [data-testid="stMetricLabel"] {
     color: #111827 !important;
     font-weight: 600 !important;
-}
+    }
 
-/* Small faded metric label fix */
-[data-testid="stMetricLabel"] * {
+    [data-testid="stMetricLabel"] * {
     color: #111827 !important;
-}
+    }
 
-/* Resume score caption text */
-.stCaption, .stMarkdown p {
+    .stCaption, .stMarkdown p {
     color: #374151 !important;
-}
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -324,7 +364,7 @@ with col3:
     )
     skill_count = len(selected_skills)
     skill_score_normalized = min(skill_count / len(skill_options), 1.0)
-    skill_score_internal = skill_count * 125
+    skill_score_internal = (skill_count / 8) * 100
 
 st.divider()
 
@@ -358,14 +398,16 @@ with metric_col6:
     st.metric("Aptitude Score", f"{aptitude_score:.0f}/100", delta=None)
     st.progress(aptitude_score / 100, text=f"Progress: {aptitude_score:.0f}%")
 
-resume_score = round((
-    (cgpa / 10) +
-    (internships / 10) +
-    (projects / 10) +
-    skill_score_normalized +
-    (certifications / 10)+
-    (aptitude_score / 100)
-) / 6 * 100, 1)
+resume_score = (
+    (cgpa / 10) * 35 +
+    min(internships / 3, 1) * 20 +
+    min(projects / 4, 1) * 15 +
+    skill_score_normalized * 15 +
+    min(certifications / 3, 1) * 5 +
+    (aptitude_score / 100) * 10
+)
+
+resume_score = round(min(resume_score, 100), 1)
 
 score_col1, score_col2 = st.columns([1, 3], gap="large")
 with score_col1:
@@ -403,10 +445,14 @@ with col_button:
     predict_btn = st.button("🚀 Predict Placement", use_container_width=True)
 
 if predict_btn:
-    input_data = np.array([[
-        cgpa, internships, projects,
-        skill_score_internal, certifications, aptitude_score
-    ]])
+    input_data = pd.DataFrame([{
+    "cgpa": cgpa,
+    "internships": internships,
+    "projects_count": projects,
+    "coding_skills": skill_score_internal,
+    "certifications": certifications,
+    "aptitude_score": aptitude_score
+}])
 
     prediction = model.predict(input_data)
     probability = model.predict_proba(input_data)[0][1]
@@ -415,22 +461,34 @@ if predict_btn:
     adjusted_prob = probability
 
     if internships == 0:
-        adjusted_prob -= 0.15
+        adjusted_prob -= 0.28
+    elif internships >= 2:
+        adjusted_prob += 0.05
 
     if certifications == 0:
-        adjusted_prob -= 0.07
+        adjusted_prob -= 0.08
+    elif certifications >= 2:
+        adjusted_prob += 0.03
 
     if projects < 2:
-        adjusted_prob -= 0.10
+        adjusted_prob -= 0.12
+    elif projects >= 3:
+        adjusted_prob += 0.04
 
     if aptitude_score < 50:
-        adjusted_prob -= 0.10
+        adjusted_prob -= 0.12
+    elif aptitude_score >= 75:
+        adjusted_prob += 0.04
+
+    if cgpa >= 8.5:
+        adjusted_prob += 0.05
+    elif cgpa < 7:
+        adjusted_prob -= 0.08
 
     adjusted_prob = max(0, min(adjusted_prob, 0.88))
 
     st.markdown("### 🎯 Prediction Results")
     
-    # Result metrics
     result_col1, result_col2, result_col3 = st.columns(3, gap="large")
     
     with result_col1:
@@ -440,14 +498,39 @@ if predict_btn:
         st.metric("Adjusted Probability", f"{adjusted_prob:.1%}")
     
     with result_col3:
-        placement_status = "✅ Strong Chance" if adjusted_prob >= 0.5 else "📈 Needs Improvement"
+        if adjusted_prob >= 0.78:
+            placement_status = "🔥 Excellent Prospect"
+        elif adjusted_prob >= 0.62:
+            placement_status = "👍 Competitive Candidate"
+        elif adjusted_prob >= 0.45:
+            placement_status = "📈 Growing Potential"
+        else:
+            placement_status = "⚠️ Needs Stronger Profile"
+            
         st.metric("Status", placement_status)
     
-    # Probability visualization
     st.markdown("**Placement Readiness Score**")
     st.progress(adjusted_prob, text=f"{adjusted_prob:.1%}")
+
+    st.markdown("### 📌 Why This Score?")
+
+    if cgpa >= 8.5:
+        st.write("✅ Strong CGPA significantly boosted your readiness.")
+
+    if internships == 0:
+        st.write("⚠️ No internship experience reduced your score.")
+
+    if projects >= 2:
+        st.write("✅ Projects improved your practical profile.")
+
+    if certifications == 0:
+        st.write("⚠️ Certifications could further strengthen your resume.")
+
+    if aptitude_score >= 75:
+        st.write("✅ Strong aptitude performance helped your chances.")
+    elif aptitude_score < 60:
+        st.write("⚠️ Aptitude needs improvement for placement tests.")
     
-    # Result message
     st.markdown("")
     if adjusted_prob >= 0.75:
         st.success("🎉 **Excellent! You have a very strong chance of placement!**", icon="✅")
@@ -475,6 +558,27 @@ if predict_btn:
             st.write(rec)
     else:
         st.success("✨ Your profile is well-rounded! Keep up the excellent work!")
+
+    pdf_bytes = create_pdf_report(
+        resume_score=resume_score,
+        adjusted_prob=adjusted_prob,
+        placement_status=placement_status.replace("✅ ", "").replace("📈 ", ""),
+        cgpa=cgpa,
+        internships=internships,
+        projects=projects,
+        certifications=certifications,
+        aptitude_score=aptitude_score,
+        selected_skills=selected_skills,
+        recommendations=recommendations,
+    )
+
+    st.download_button(
+        label="📄 Download Placement Readiness Report",
+        data=pdf_bytes,
+        file_name="placement_readiness_report.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+    )
 st.caption("Built with Streamlit, Scikit-learn, Python")
 
 
