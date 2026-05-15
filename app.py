@@ -1,13 +1,12 @@
 import streamlit as st
 import joblib
-import numpy as np
 import pandas as pd
 from io import BytesIO
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+import plotly.graph_objects as go
 
 def create_pdf_report(resume_score, adjusted_prob, placement_status,
                        cgpa, internships, projects, certifications,
@@ -237,7 +236,6 @@ with st.sidebar:
                 "CGPA",
                 "Internships",
                 "Projects",
-                "LeetCode Problems",
                 "Certifications",
                 "Aptitude Score"
             ],
@@ -245,17 +243,15 @@ with st.sidebar:
                 "10.0",
                 "10",
                 "10",
-                "1000",
                 "10",
                 "100"
             ],
             "Contribution": [
-                "16.7%",
-                "16.7%",
-                "16.7%",
-                "16.7%",
-                "16.7%",
-                "16.7%"
+                "20%",
+                "20%",
+                "20%",
+                "20%",
+                "20%"
             ]
         })
         st.dataframe(resume_components, use_container_width=True, hide_index=True)
@@ -362,9 +358,31 @@ with col3:
         options=skill_options,
         help="Choose the skills and technologies you have experience with"
     )
+    career_goal = st.selectbox(
+    "🎯 Target Role",
+    [
+        "Software Development Engineer (SDE)",
+        "Frontend Developer",
+        "Backend Developer",
+        "Data Analyst",
+        "AI/ML Engineer"
+    ]
+    )   
     skill_count = len(selected_skills)
     skill_score_normalized = min(skill_count / len(skill_options), 1.0)
     skill_score_internal = (skill_count / 8) * 100
+    required_skills = {
+    "Software Development Engineer (SDE)": ["DSA", "Java"],
+    "Frontend Developer": ["HTML/CSS", "JavaScript", "React"],
+    "Backend Developer": ["Python", "SQL"],
+    "Data Analyst": ["Python", "SQL"],
+    "AI/ML Engineer": ["Python", "ML"]
+}
+
+    missing_skills = [
+    skill for skill in required_skills[career_goal]
+    if skill not in selected_skills
+    ]
 
 st.divider()
 
@@ -415,28 +433,45 @@ with score_col1:
 with score_col2:
     st.caption("Calculated from CGPA, internships, projects, certifications, coding effort, and aptitude.")
 
-st.markdown("### 📈 Score Comparison")
+st.markdown("### 📈 Profile Radar Analysis")
 
-normalized_data = pd.DataFrame({
-    "Metric": [
-        "CGPA",
-        "Internships",
-        "Projects",
-        "Skills",
-        "Certifications",
-        "Aptitude Score"
-    ],
-    "Normalized": [
-        cgpa / 10 * 100,
-        internships / 10 * 100,
-        projects / 10 * 100,
-        skill_score_normalized * 100,
-        certifications / 10 * 100,
-        min(aptitude_score, 100)
-    ]
-}).set_index("Metric")
+categories = [
+    "CGPA",
+    "Internships",
+    "Projects",
+    "Skills",
+    "Certifications",
+    "Aptitude"
+]
 
-st.bar_chart(normalized_data)
+values = [
+    cgpa / 10 * 100,
+    internships / 10 * 100,
+    projects / 10 * 100,
+    skill_score_normalized * 100,
+    certifications / 10 * 100,
+    aptitude_score
+]
+
+fig = go.Figure()
+
+fig.add_trace(go.Scatterpolar(
+    r=values,
+    theta=categories,
+    fill='toself',
+    name='Profile Strength'
+))
+
+fig.update_layout(
+    polar=dict(
+        radialaxis=dict(
+            visible=True,
+            range=[0, 100]
+        )),
+    showlegend=False
+)
+
+st.plotly_chart(fig, use_container_width=True)
 
 st.divider()
 
@@ -452,9 +487,8 @@ if predict_btn:
     "coding_skills": skill_score_internal,
     "certifications": certifications,
     "aptitude_score": aptitude_score
-}])
+    }])
 
-    prediction = model.predict(input_data)
     probability = model.predict_proba(input_data)[0][1]
 
 
@@ -487,6 +521,8 @@ if predict_btn:
 
     adjusted_prob = max(0, min(adjusted_prob, 0.88))
 
+    st.toast("Prediction Generated Successfully 🎉")
+
     st.markdown("### 🎯 Prediction Results")
     
     result_col1, result_col2, result_col3 = st.columns(3, gap="large")
@@ -511,6 +547,30 @@ if predict_btn:
     
     st.markdown("**Placement Readiness Score**")
     st.progress(adjusted_prob, text=f"{adjusted_prob:.1%}")
+    st.markdown("### 💪 Key Strengths")
+
+    strengths = []
+
+    if cgpa >= 8:
+        strengths.append("Strong Academic Performance")
+
+    if internships >= 1:
+        strengths.append("Industry Exposure Through Internships")
+
+    if projects >= 3:
+        strengths.append("Excellent Practical Project Experience")
+
+    if aptitude_score >= 75:
+        strengths.append("Strong Aptitude and Problem Solving")
+
+    if skill_count >= 4:
+        strengths.append("Good Technical Skill Set")
+
+    if strengths:
+        for strength in strengths:
+            st.success(f"✅ {strength}")
+    else:
+        st.info("Keep building your profile to unlock stronger highlights.")
 
     st.markdown("### 📌 Why This Score?")
 
@@ -528,10 +588,12 @@ if predict_btn:
 
     if aptitude_score >= 75:
         st.write("✅ Strong aptitude performance helped your chances.")
+
     elif aptitude_score < 60:
         st.write("⚠️ Aptitude needs improvement for placement tests.")
     
     st.markdown("")
+    
     if adjusted_prob >= 0.75:
         st.success("🎉 **Excellent! You have a very strong chance of placement!**", icon="✅")
     elif adjusted_prob >= 0.55:
@@ -540,6 +602,15 @@ if predict_btn:
         st.warning("📈 **Work on improving your profile for better chances.**", icon="⚠️")
     
     st.markdown("**💡 Recommendations:**")
+    st.markdown("### 🚨 Skill Gap Analysis")
+
+    if missing_skills:
+        st.markdown("#### Missing Skills")
+        for skill in missing_skills:
+            st.markdown(f"- {skill}")
+    else:
+        st.success(f"🎉 You already match the core skills for {career_goal}")
+    
     recommendations = []
     
     if cgpa < 7.0:
@@ -553,16 +624,34 @@ if predict_btn:
     if aptitude_score < 60:
         recommendations.append("• Work on improving your aptitude score")
     
+    if career_goal == "Software Development Engineer (SDE)":
+        if "DSA" not in selected_skills:
+            recommendations.append("• Practice DSA regularly for coding interviews")
+
+    if career_goal == "Frontend Developer":
+        if "React" not in selected_skills:
+            recommendations.append("• Learn React and build responsive frontend projects")
+
+    if career_goal == "Backend Developer":
+        if "SQL" not in selected_skills:
+            recommendations.append("• Improve backend/database skills using SQL")
+
+    if career_goal == "AI/ML Engineer":
+        if "ML" not in selected_skills:
+            recommendations.append("• Build ML projects using scikit-learn and pandas")
+    
     if recommendations:
         for rec in recommendations:
             st.write(rec)
     else:
         st.success("✨ Your profile is well-rounded! Keep up the excellent work!")
 
+    clean_status = placement_status.split(" ", 1)[1]
+
     pdf_bytes = create_pdf_report(
         resume_score=resume_score,
         adjusted_prob=adjusted_prob,
-        placement_status=placement_status.replace("✅ ", "").replace("📈 ", ""),
+        placement_status=clean_status,
         cgpa=cgpa,
         internships=internships,
         projects=projects,
@@ -579,7 +668,7 @@ if predict_btn:
         mime="application/pdf",
         use_container_width=True,
     )
-st.caption("Built with Streamlit, Scikit-learn, Python")
+    st.caption("Built with Streamlit, Scikit-learn, Python")
 
 
     
