@@ -15,7 +15,7 @@ def create_pdf_report(resume_score, adjusted_prob, placement_status,
     doc = SimpleDocTemplate(buffer, pagesize=letter)
     styles = getSampleStyleSheet()
     story = []
-
+    
     title_style = ParagraphStyle('Title', parent=styles['Title'],
                                   textColor=colors.HexColor('#2563eb'), fontSize=20)
     story.append(Paragraph("🎯 Placement Readiness Report", title_style))
@@ -58,163 +58,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.markdown("""
-    <style>
-    :root {
-        --bg: #eff3fb;
-        --panel: #ffffff;
-        --panel-soft: #f7f9fc;
-        --text: #111827;
-        --muted: #54678f;
-        --primary: #2563eb;
-        --primary-soft: #e5efff;
-        --border: rgba(37, 99, 235, 0.18);
-    }
+def load_css():
+    with open("stylesheet.css") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-    body, .stApp, [data-testid="stAppViewContainer"] {
-        background: var(--bg);
-        color: var(--text);
-    }
-
-    [data-testid="stSidebar"] {
-        background: var(--panel);
-        border-right: 1px solid rgba(15, 23, 42, 0.08);
-        box-shadow: 2px 0 24px rgba(15, 23, 42, 0.06);
-    }
-
-    .main-header {
-        font-size: 2.6rem;
-        font-weight: 700;
-        color: var(--primary);
-        margin-bottom: 0.25rem;
-    }
-
-    .sub-header {
-        font-size: 1.05rem;
-        color: #1e293b;
-        margin-bottom: 2rem;
-        line-height: 1.6;
-    }
-
-    .css-1d391kg, .css-18e3th9, .css-1v0mbdj, .css-10trblm {
-        background: transparent;
-    }
-
-    .stMarkdown, .stText, .stCaption {
-        color: var(--text);
-    }
-
-    .metric-card {
-        background: var(--panel);
-        padding: 1.2rem;
-        border-radius: 1rem;
-        border: 1px solid var(--border);
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
-    }
-
-    .stButton>button {
-        background: var(--primary);
-        color: white;
-        border: none;
-        border-radius: 0.85rem;
-        padding: 0.9rem 1.2rem;
-        font-size: 1rem;
-        font-weight: 600;
-        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.16);
-    }
-
-    .stButton>button:hover {
-        background: #1d4ed8;
-    }
-
-    .stProgress .st-bo {
-        border-radius: 999px;
-        background: var(--panel-soft);
-    }
-
-    .stProgress>div>div>div {
-        border-radius: 999px;
-        background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
-    }
-
-    [data-testid="stMetricValue"] {
-        font-size: 1.45rem;
-        font-weight: 700;
-        color: var(--text);
-    }
-
-    [data-testid="stMetricDelta"] {
-        color: var(--muted);
-    }
-
-    .st-expander {
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 1rem;
-        background: var(--panel-soft);
-    }
-
-    .st-expander header {
-        font-weight: 600;
-        color: var(--text);
-    }
-
-    .st-dataframe {
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 1rem;
-        background: var(--panel);
-    }
-    
-    label[data-testid="stWidgetLabel"] p,
-    label[data-testid="stWidgetLabel"] span,
-    label[data-testid="stWidgetLabel"] div {
-    color: #111827 !important;
-    font-weight: 600 !important;
-    }
-
-    input, textarea {
-    background-color: #111827 !important;
-    color: white !important;
-    border-radius: 8px !important;
-    }
-
-    [data-baseweb="input"] {
-    background-color: #111827 !important;
-    color: white !important;
-    }
-
-    [data-baseweb="select"] {
-    background-color: #111827 !important;
-    color: white !important;
-    }
-
-    [data-baseweb="tag"] {
-    background-color: #2563eb !important;
-    color: white !important;
-    }
-
-    ul[role="listbox"] li {
-    background-color: #111827 !important;
-    color: white !important;
-    }
-
-    input::placeholder {
-    color: #cbd5e1 !important;
-    }
-
-    [data-testid="stMetricLabel"] {
-    color: #111827 !important;
-    font-weight: 600 !important;
-    }
-
-    [data-testid="stMetricLabel"] * {
-    color: #111827 !important;
-    }
-
-    .stCaption, .stMarkdown p {
-    color: #374151 !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+load_css()
 
 model = joblib.load("model.pkl")
 
@@ -327,6 +175,13 @@ with st.sidebar:
         **Q: What if I don't have an internship?**
         A: Complete one ASAP. It significantly impacts placement chances.
         """)
+        st.divider()
+
+        st.markdown("### 👨‍💻 Developer")
+        st.info(
+            "Built to help students evaluate placement readiness using "
+            "machine learning, profile analysis, and skill-gap insights."
+        )
 
 col_header = st.container()
 with col_header:
@@ -604,6 +459,119 @@ if predict_btn:
     st.markdown("**💡 Recommendations:**")
     st.markdown("### 🚨 Skill Gap Analysis")
 
+    role_alignment_message = ""
+
+    if career_goal == "Software Development Engineer (SDE)":
+
+        if (
+            "DSA" in selected_skills and
+            ("Python" in selected_skills or "Java" in selected_skills) and
+            projects >= 2 and
+            aptitude_score >= 70
+        ):
+            role_alignment_message = (
+                "💻 Strong alignment toward SDE roles with solid coding and problem-solving foundations."
+            )
+
+        elif "Python" in selected_skills or "Java" in selected_skills:
+            role_alignment_message = (
+                "⚙️ You have programming foundations, but improving DSA and project depth will strengthen SDE readiness."
+            )
+
+        else:
+            role_alignment_message = (
+                "📈 Focus on programming fundamentals, DSA, and development projects for SDE preparation."
+            )
+
+
+    elif career_goal == "Frontend Developer":
+
+        if (
+            all(skill in selected_skills for skill in ["HTML/CSS", "JavaScript", "React"]) and
+            projects >= 2
+        ):
+            role_alignment_message = (
+                "🎨 Your profile aligns strongly with frontend development roles and modern UI development."
+            )
+
+        elif "HTML/CSS" in selected_skills or "JavaScript" in selected_skills:
+            role_alignment_message = (
+                "🖥️ You have frontend basics, but learning React and building responsive projects will improve readiness."
+            )
+
+        else:
+            role_alignment_message = (
+                "📈 Start with HTML, CSS, and JavaScript fundamentals to build frontend development skills."
+            )
+
+
+    elif career_goal == "Backend Developer":
+
+        if (
+            "Python" in selected_skills and
+            "SQL" in selected_skills and
+            projects >= 2
+        ):
+            role_alignment_message = (
+                "⚙️ Strong backend alignment with database and server-side development foundations."
+            )
+
+        elif "Python" in selected_skills or "SQL" in selected_skills:
+            role_alignment_message = (
+                "🛠️ Your backend foundation is growing, but API development and database skills need improvement."
+            )
+
+        else:
+            role_alignment_message = (
+                "📈 Learn backend programming, databases, and APIs to prepare for backend engineering roles."
+            )
+
+
+    elif career_goal == "Data Analyst":
+
+        if (
+            "Python" in selected_skills and
+            "SQL" in selected_skills and
+            aptitude_score >= 65
+        ):
+            role_alignment_message = (
+                "📊 Your analytical skillset aligns well with data analysis and business intelligence roles."
+            )
+
+        elif "SQL" in selected_skills or "Python" in selected_skills:
+            role_alignment_message = (
+                "📈 You have analytical foundations, but improving data visualization and analytics skills will help."
+            )
+
+        else:
+            role_alignment_message = (
+                "📚 Focus on Python, SQL, and data analysis fundamentals for analyst roles."
+            )
+
+
+    elif career_goal == "AI/ML Engineer":
+
+        if (
+            "Python" in selected_skills and
+            "ML" in selected_skills and
+            projects >= 2
+        ):
+            role_alignment_message = (
+                "🤖 Strong AI/ML alignment with machine learning foundations and practical exposure."
+            )
+
+        elif "Python" in selected_skills or "ML" in selected_skills:
+            role_alignment_message = (
+                "🧠 You have some AI/ML foundations, but building ML projects and learning model deployment will help."
+            )
+
+        else:
+            role_alignment_message = (
+                "📈 Start with Python, mathematics, and machine learning fundamentals for AI/ML roles."
+            )
+
+    st.info(role_alignment_message)
+
     if missing_skills:
         st.markdown("#### Missing Skills")
         for skill in missing_skills:
@@ -625,26 +593,54 @@ if predict_btn:
         recommendations.append("• Work on improving your aptitude score")
     
     if career_goal == "Software Development Engineer (SDE)":
+
         if "DSA" not in selected_skills:
             recommendations.append("• Practice DSA regularly for coding interviews")
 
+        if "Python" not in selected_skills and "Java" not in selected_skills:
+            recommendations.append("• Learn a programming language like Python or Java")
+
+        if projects < 2:
+            recommendations.append("• Build full-stack or problem-solving based projects")
+
     if career_goal == "Frontend Developer":
+
+        if "JavaScript" not in selected_skills:
+            recommendations.append("• Strengthen JavaScript fundamentals for frontend development")
+
         if "React" not in selected_skills:
             recommendations.append("• Learn React and build responsive frontend projects")
 
+        if projects < 2:
+            recommendations.append("• Build responsive UI projects and portfolio websites")
+
     if career_goal == "Backend Developer":
+
         if "SQL" not in selected_skills:
             recommendations.append("• Improve backend/database skills using SQL")
 
+        if "Python" not in selected_skills and "Java" not in selected_skills:
+            recommendations.append("• Learn a backend programming language like Python or Java")
+
+        if projects < 2:
+            recommendations.append("• Build backend API projects using databases and authentication")
+
     if career_goal == "AI/ML Engineer":
+
         if "ML" not in selected_skills:
             recommendations.append("• Build ML projects using scikit-learn and pandas")
+
+        if "Python" not in selected_skills:
+            recommendations.append("• Strengthen Python programming for AI/ML development")
+
+        if projects < 2:
+            recommendations.append("• Build AI/ML projects to gain practical experience")
     
-    if recommendations:
-        for rec in recommendations:
-            st.write(rec)
-    else:
-        st.success("✨ Your profile is well-rounded! Keep up the excellent work!")
+        if recommendations:
+            for rec in recommendations:
+                st.write(rec)
+        else:
+            st.success("✨ Your profile is well-rounded! Keep up the excellent work!")
 
     clean_status = placement_status.split(" ", 1)[1]
 
@@ -668,7 +664,8 @@ if predict_btn:
         mime="application/pdf",
         use_container_width=True,
     )
-    st.caption("Built with Streamlit, Scikit-learn, Python")
+    st.divider()
+    st.caption("🚀 Built with Streamlit, Scikit-learn, Plotly & Python")
 
 
     
