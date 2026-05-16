@@ -207,7 +207,35 @@ with col2:
 with col3:
     st.markdown("**Skills & Certifications**")
     certifications = st.number_input("Certifications", 0, 10, step=1, help="Number of certifications")
-    skill_options = ["HTML/CSS", "JavaScript", "React", "Python", "Java", "SQL", "DSA", "ML"]
+    skill_options = [
+    "HTML/CSS",
+    "JavaScript",
+    "React",
+    "Next.js",
+    "Tailwind CSS",
+    "TypeScript",
+    "Python",
+    "Java",
+    "C++",
+    "SQL",
+    "MongoDB",
+    "Node.js",
+    "Express.js",
+    "Firebase",
+    "Git/GitHub",
+    "REST APIs",
+    "DSA",
+    "OOP",
+    "DBMS",
+    "Operating Systems",
+    "Computer Networks",
+    "Machine Learning",
+    "Data Analysis",
+    "Pandas",
+    "NumPy",
+    "AWS",
+    "Docker"
+    ]
     selected_skills = st.multiselect(
         "Select Technologies You Know",
         options=skill_options,
@@ -225,14 +253,45 @@ with col3:
     )   
     skill_count = len(selected_skills)
     skill_score_normalized = min(skill_count / len(skill_options), 1.0)
-    skill_score_internal = (skill_count / 8) * 100
+    skill_score_internal = (skill_count / len(skill_options)) * 100
     required_skills = {
-    "Software Development Engineer (SDE)": ["DSA", "Java"],
-    "Frontend Developer": ["HTML/CSS", "JavaScript", "React"],
-    "Backend Developer": ["Python", "SQL"],
-    "Data Analyst": ["Python", "SQL"],
-    "AI/ML Engineer": ["Python", "ML"]
+    "Software Development Engineer (SDE)": [
+        "DSA",
+        "OOP",
+        "DBMS",
+        "Operating Systems",
+        "Java"
+    ],
+
+    "Frontend Developer": [
+        "HTML/CSS",
+        "JavaScript",
+        "React",
+        "Tailwind CSS"
+    ],
+
+    "Backend Developer": [
+        "Node.js",
+        "Express.js",
+        "MongoDB",
+        "SQL"
+    ],
+
+    "Data Analyst": [
+        "Python",
+        "SQL",
+        "Pandas",
+        "Data Analysis"
+    ],
+
+    "AI/ML Engineer": [
+        "Python",
+        "Machine Learning",
+        "Pandas",
+        "NumPy"
+    ]
 }
+    
 
     missing_skills = [
     skill for skill in required_skills[career_goal]
@@ -457,6 +516,86 @@ if predict_btn:
         st.warning("📈 **Work on improving your profile for better chances.**", icon="⚠️")
     
     st.markdown("**💡 Recommendations:**")
+
+    st.markdown("### 🛣️ Personalized Learning Roadmap")
+
+    roadmap = []
+
+    if career_goal == "Software Development Engineer (SDE)":
+        roadmap = [
+            "📘 Practice DSA daily using LeetCode",
+            "⚙️ Learn DBMS, OS, and OOP concepts",
+            "🛠️ Build full-stack projects",
+            "🚀 Practice coding interview questions"
+        ]
+
+    elif career_goal == "Frontend Developer":
+        roadmap = [
+            "🎨 Master responsive UI design",
+            "⚛️ Build React projects",
+            "🌐 Learn APIs and deployment",
+            "🧩 Create portfolio-quality frontend apps"
+        ]
+
+    elif career_goal == "Backend Developer":
+        roadmap = [
+            "🗄️ Learn databases and SQL",
+            "🔗 Build REST APIs using Node.js",
+            "🔐 Implement authentication systems",
+            "☁️ Learn deployment basics"
+        ]
+
+    elif career_goal == "Data Analyst":
+        roadmap = [
+            "📊 Learn data visualization",
+            "🐍 Practice Python and Pandas",
+            "🧠 Analyze datasets",
+            "📈 Build analytics dashboards"
+        ]
+
+    elif career_goal == "AI/ML Engineer":
+        roadmap = [
+            "🤖 Learn machine learning fundamentals",
+            "📚 Build ML projects using scikit-learn",
+            "📊 Practice data preprocessing",
+            "🚀 Learn model deployment"
+        ]
+
+    for step in roadmap:
+        st.write(step)
+
+    st.markdown("### 🚀 Recommended Projects")
+    project_suggestions = {
+        "Software Development Engineer (SDE)": [
+            "Build a full-stack internship tracker with user authentication.",
+            "Create a coding challenge platform with problem submission and scoring.",
+            "Develop a collaborative team task manager using REST APIs."
+        ],
+        "Frontend Developer": [
+            "Design a responsive portfolio website with animations and dark mode.",
+            "Build an e-commerce UI using React and Tailwind CSS.",
+            "Create an interactive data dashboard with charts and filters."
+        ],
+        "Backend Developer": [
+            "Build a RESTful API for a blogging platform with database support.",
+            "Create an authentication service with JWT and role-based access.",
+            "Develop a task scheduler API with SQL or MongoDB persistence."
+        ],
+        "Data Analyst": [
+            "Analyze a real dataset and build a visualization dashboard in Streamlit.",
+            "Create a sales performance report with Python, Pandas, and SQL.",
+            "Build an insights dashboard that includes trend analysis and forecasts."
+        ],
+        "AI/ML Engineer": [
+            "Build a machine learning model for classification using scikit-learn.",
+            "Create an image or text classifier and visualize model performance.",
+            "Develop an end-to-end pipeline for data preprocessing and model deployment."
+        ]
+    }
+
+    for project in project_suggestions[career_goal]:
+        st.markdown(f"- {project}")
+
     st.markdown("### 🚨 Skill Gap Analysis")
 
     role_alignment_message = ""
@@ -636,11 +775,11 @@ if predict_btn:
         if projects < 2:
             recommendations.append("• Build AI/ML projects to gain practical experience")
     
-        if recommendations:
-            for rec in recommendations:
-                st.write(rec)
-        else:
-            st.success("✨ Your profile is well-rounded! Keep up the excellent work!")
+    if recommendations:
+        for rec in recommendations:
+            st.write(rec)
+    else:
+        st.success("✨ Your profile is well-rounded! Keep up the excellent work!")
 
     clean_status = placement_status.split(" ", 1)[1]
 
