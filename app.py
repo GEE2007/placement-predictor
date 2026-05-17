@@ -1,7 +1,10 @@
+import re
+
 import streamlit as st
 import joblib
 import pandas as pd
 from io import BytesIO
+from PyPDF2 import PdfReader
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -50,6 +53,7 @@ def create_pdf_report(resume_score, adjusted_prob, placement_status,
     doc.build(story)
     buffer.seek(0)
     return buffer.read()
+    
 
 st.set_page_config(
     page_title="Placement Predictor",
@@ -58,11 +62,115 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+if "extracted_cgpa" not in st.session_state:
+    st.session_state.extracted_cgpa = None
+
 def load_css():
     with open("stylesheet.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 load_css()
+
+
+def extract_text_from_pdf(uploaded_file):
+    reader = PdfReader(uploaded_file)
+    return "\n".join(page.extract_text() or "" for page in reader.pages)
+
+
+def extract_cgpa_from_text(text):
+    """
+    Extract CGPA/GPA from resume text using regex.
+    
+    Supports formats like:
+    - CGPA: 8.5
+    - GPA: 3.7
+    - CGPA/GPA 8.2
+    - 8.5/10
+    - GPA 3.7 / 4.0
+    
+    Returns:
+        float or None: Extracted CGPA value (normalized to 10-scale) or None if not found
+    """
+    if not text:
+        return None
+    
+    text_lower = text.lower()
+    
+    pattern1 = r'(?:cgpa|gpa)\s*:?\s*(\d+\.?\d*)'
+    match1 = re.search(pattern1, text_lower)
+    if match1:
+        try:
+            value = float(match1.group(1))
+            if value <= 4.0:
+                value = (value / 4.0) * 10
+            if 0 <= value <= 10:
+                return round(value, 2)
+        except ValueError:
+            pass
+
+    pattern2 = r'(\d+\.?\d*)\s*/\s*10'
+    match2 = re.search(pattern2, text_lower)
+    if match2:
+        try:
+            value = float(match2.group(1))
+            if 0 <= value <= 10:
+                return round(value, 2)
+        except ValueError:
+            pass
+    
+    pattern3 = r'(?:cgpa|gpa)\s*:?\s*(\d+\.?\d*)\s*/\s*4'
+    match3 = re.search(pattern3, text_lower)
+    if match3:
+        try:
+            value = float(match3.group(1))
+            value = (value / 4.0) * 10
+            if 0 <= value <= 10:
+                return round(value, 2)
+        except ValueError:
+            pass
+    return None 
+
+
+def detect_skills_from_text(text, skill_options):
+    text_lower = text.lower()
+    skill_keywords = {
+        "HTML/CSS": ["html", "css"],
+        "JavaScript": ["javascript"],
+        "React": ["react"],
+        "Next.js": ["next.js", "next js"],
+        "Tailwind CSS": ["tailwind css", "tailwind"],
+        "TypeScript": ["typescript"],
+        "Python": ["python"],
+        "Java": ["java"],
+        "C++": ["c++"],
+        "SQL": ["sql"],
+        "MongoDB": ["mongodb"],
+        "Node.js": ["node.js", "node js"],
+        "Express.js": ["express.js", "express js"],
+        "Firebase": ["firebase"],
+        "Git/GitHub": ["git", "github"],
+        "REST APIs": ["rest api", "rest apis", "restful"],
+        "DSA": ["dsa", "data structures", "algorithms"],
+        "OOP": ["oop", "object oriented programming", "object oriented"],
+        "DBMS": ["dbms", "database management system", "database management systems"],
+        "Operating Systems": ["operating system", "operating systems"],
+        "Computer Networks": ["computer networks", "networking"],
+        "Machine Learning": ["machine learning", "ml"],
+        "Data Analysis": ["data analysis", "data analytics"],
+        "Pandas": ["pandas"],
+        "NumPy": ["numpy"],
+        "AWS": ["aws"],
+        "Docker": ["docker"]
+    }
+
+    detected = []
+    for skill in skill_options:
+        for keyword in skill_keywords.get(skill, [skill.lower()]):
+            if re.search(rf"\b{re.escape(keyword)}\b", text_lower):
+                detected.append(skill)
+                break
+    return detected
+
 
 model = joblib.load("model.pkl")
 
@@ -196,7 +304,14 @@ col1, col2, col3 = st.columns(3, gap="medium")
 
 with col1:
     st.markdown("**Academic Performance**")
-    cgpa = st.number_input("CGPA", 0.0, 10.0, step=0.1, help="Cumulative GPA on a scale of 10")
+    cgpa = st.number_input(
+    "CGPA",
+    0.0,
+    10.0,
+    value=float(st.session_state.extracted_cgpa) if st.session_state.extracted_cgpa is not None else 7.0,
+    step=0.1,
+    help="Cumulative GPA on a scale of 10"
+)
     aptitude_score = st.number_input("Aptitude Score", 0.0, 100.0, step=0.1, help="Score out of 100")
 
 with col2:
@@ -236,9 +351,32 @@ with col3:
     "AWS",
     "Docker"
     ]
+    resume_file = st.file_uploader(
+        "Upload Resume (PDF)",
+        type=["pdf"],
+        help="Upload your resume to auto-detect skills and CGPA from the PDF"
+    )
+    detected_skills = []
+    if resume_file is not None:
+        try:
+            resume_text = extract_text_from_pdf(resume_file)
+            extracted_cgpa = extract_cgpa_from_text(resume_text)
+            st.session_state.extracted_cgpa = extracted_cgpa  
+            if extracted_cgpa:
+                st.success(f"Detected CGPA: {extracted_cgpa}") 
+            detected_skills = detect_skills_from_text(resume_text, skill_options)
+            if detected_skills:
+                st.markdown("**Detected Skills from Resume:**")
+                st.write(", ".join(detected_skills))
+            else:
+                st.info("No matching skills were detected in the upload.")
+        except Exception:
+            st.error("Could not extract text from the uploaded PDF. Please upload a valid resume file.")
+            st.session_state.extracted_cgpa = None
     selected_skills = st.multiselect(
         "Select Technologies You Know",
         options=skill_options,
+        default=detected_skills,
         help="Choose the skills and technologies you have experience with"
     )
     career_goal = st.selectbox(
@@ -306,7 +444,7 @@ metric_col1, metric_col2, metric_col3 = st.columns(3, gap="large")
 
 with metric_col1:
     st.metric("CGPA", f"{cgpa:.2f}/10", delta=None)
-    st.progress(cgpa / 10, text=f"Progress: {(cgpa/10)*100:.0f}%")
+    st.progress(max(cgpa / 10, 0), text=f"Progress: {(cgpa/10)*100:.0f}%")
 
 with metric_col2:
     st.metric("Internships", f"{internships}/10", delta=None)
@@ -330,16 +468,17 @@ with metric_col6:
     st.metric("Aptitude Score", f"{aptitude_score:.0f}/100", delta=None)
     st.progress(aptitude_score / 100, text=f"Progress: {aptitude_score:.0f}%")
 
-resume_score = (
-    (cgpa / 10) * 35 +
-    min(internships / 3, 1) * 20 +
-    min(projects / 4, 1) * 15 +
-    skill_score_normalized * 15 +
-    min(certifications / 3, 1) * 5 +
+def calculate_resume_score():
+    return (
+        (cgpa / 10) * 35 +
+        min(internships / 3, 1) * 20 +
+        min(projects / 4, 1) * 15 +
+        skill_score_normalized * 15 +
+        min(certifications / 3, 1) * 5 +
     (aptitude_score / 100) * 10
 )
 
-resume_score = round(min(resume_score, 100), 1)
+resume_score = round(min(calculate_resume_score(), 100), 1)
 
 score_col1, score_col2 = st.columns([1, 3], gap="large")
 with score_col1:
@@ -692,14 +831,14 @@ if predict_btn:
 
         if (
             "Python" in selected_skills and
-            "ML" in selected_skills and
+            "Machine Learning" in selected_skills and
             projects >= 2
         ):
             role_alignment_message = (
                 "🤖 Strong AI/ML alignment with machine learning foundations and practical exposure."
             )
 
-        elif "Python" in selected_skills or "ML" in selected_skills:
+        elif "Python" in selected_skills or "Machine Learning" in selected_skills:
             role_alignment_message = (
                 "🧠 You have some AI/ML foundations, but building ML projects and learning model deployment will help."
             )
@@ -766,7 +905,7 @@ if predict_btn:
 
     if career_goal == "AI/ML Engineer":
 
-        if "ML" not in selected_skills:
+        if "Machine Learning" not in selected_skills:
             recommendations.append("• Build ML projects using scikit-learn and pandas")
 
         if "Python" not in selected_skills:

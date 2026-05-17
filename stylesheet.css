@@ -1,0 +1,153 @@
+:root {
+        --bg: #eff3fb;
+        --panel: #ffffff;
+        --panel-soft: #f7f9fc;
+        --text: #111827;
+        --muted: #54678f;
+        --primary: #2563eb;
+        --primary-soft: #e5efff;
+        --border: rgba(37, 99, 235, 0.18);
+    }
+
+    body, .stApp, [data-testid="stAppViewContainer"] {
+        background: var(--bg);
+        color: var(--text);
+    }
+
+    [data-testid="stSidebar"] {
+        background: var(--panel);
+        border-right: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 2px 0 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .main-header {
+        font-size: 2.6rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .sub-header {
+        font-size: 1.05rem;
+        color: #1e293b;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+
+    .css-1d391kg, .css-18e3th9, .css-1v0mbdj, .css-10trblm {
+        background: transparent;
+    }
+
+    .stMarkdown, .stText, .stCaption {
+        color: var(--text);
+    }
+
+    .metric-card {
+        background: var(--panel);
+        padding: 1.2rem;
+        border-radius: 1rem;
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+    }
+
+    .stButton>button {
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 0.85rem;
+        padding: 0.9rem 1.2rem;
+        font-size: 1rem;
+        font-weight: 600;
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.16);
+    }
+
+    .stButton>button:hover {
+        background: #1d4ed8;
+    }
+
+    .stProgress .st-bo {
+        border-radius: 999px;
+        background: var(--panel-soft);
+    }
+
+    .stProgress>div>div>div {
+        border-radius: 999px;
+        background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
+    }
+
+    [data-testid="stMetricValue"] {
+        font-size: 1.45rem;
+        font-weight: 700;
+        color: var(--text);
+    }
+
+    [data-testid="stMetricDelta"] {
+        color: var(--muted);
+    }
+
+    .st-expander {
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 1rem;
+        background: var(--panel-soft);
+    }
+
+    .st-expander header {
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    .st-dataframe {
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 1rem;
+        background: var(--panel);
+    }
+    
+    label[data-testid="stWidgetLabel"] p,
+    label[data-testid="stWidgetLabel"] span,
+    label[data-testid="stWidgetLabel"] div {
+    color: #111827 !important;
+    font-weight: 600 !important;
+    }
+
+    input, textarea {
+    background-color: #111827 !important;
+    color: white !important;
+    border-radius: 8px !important;
+    }
+
+    [data-baseweb="input"] {
+    background-color: #111827 !important;
+    color: white !important;
+    }
+
+    [data-baseweb="select"] {
+    background-color: #111827 !important;
+    color: white !important;
+    }
+
+    [data-baseweb="tag"] {
+    background-color: #2563eb !important;
+    color: white !important;
+    }
+
+    ul[role="listbox"] li {
+    background-color: #111827 !important;
+    color: white !important;
+    }
+
+    input::placeholder {
+    color: #cbd5e1 !important;
+    }
+
+    [data-testid="stMetricLabel"] {
+    color: #111827 !important;
+    font-weight: 600 !important;
+    }
+
+    [data-testid="stMetricLabel"] * {
+    color: #111827 !important;
+    }
+
+    .stCaption, .stMarkdown p {
+    color: #374151 !important;
+    }
