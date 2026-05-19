@@ -526,17 +526,18 @@ fig.update_layout(
 
 st.plotly_chart(fig, use_container_width=True)
 
-st.divider()
+st.markdown("### 🥇 Profile Strength Comparison")
+benchmarks = {
+    "Average Student": 55,
+    "Placement Ready Student": 72,
+    "Top Candidate": 88,
+}
+comparison_cols = st.columns(3, gap="large")
+for col, (label, benchmark) in zip(comparison_cols, benchmarks.items()):
+    with col:
+        st.metric(label, f"{benchmark}/100", delta=f"{resume_score - benchmark:+.1f}")
+        st.progress(min(resume_score / 100, 1.0), text=f"Your score: {resume_score:.1f}/100")
 
-col_button = st.columns([1, 4])[0]
-with col_button:
-    predict_btn = st.button("🚀 Predict Placement", use_container_width=True)
-
-if predict_btn:
-    input_data = pd.DataFrame([{
-    "cgpa": cgpa,
-    "internships": internships,
-    "projects_count": projects,
     "coding_skills": skill_score_internal,
     "certifications": certifications,
     "aptitude_score": aptitude_score
@@ -548,29 +549,29 @@ if predict_btn:
     adjusted_prob = probability
 
     if internships == 0:
-        adjusted_prob -= 0.28
+        adjusted_prob -= 0.05
     elif internships >= 2:
-        adjusted_prob += 0.05
+        adjusted_prob += 0.02
 
     if certifications == 0:
-        adjusted_prob -= 0.08
+        adjusted_prob -= 0.03
     elif certifications >= 2:
-        adjusted_prob += 0.03
+        adjusted_prob += 0.02
 
     if projects < 2:
-        adjusted_prob -= 0.12
+        adjusted_prob -= 0.03
     elif projects >= 3:
-        adjusted_prob += 0.04
+        adjusted_prob += 0.03
 
     if aptitude_score < 50:
-        adjusted_prob -= 0.12
+        adjusted_prob -= 0.03
     elif aptitude_score >= 75:
-        adjusted_prob += 0.04
+        adjusted_prob += 0.03
 
     if cgpa >= 8.5:
-        adjusted_prob += 0.05
+        adjusted_prob += 0.03
     elif cgpa < 7:
-        adjusted_prob -= 0.08
+        adjusted_prob -= 0.05
 
     adjusted_prob = max(0, min(adjusted_prob, 0.88))
 
@@ -581,10 +582,10 @@ if predict_btn:
     result_col1, result_col2, result_col3 = st.columns(3, gap="large")
     
     with result_col1:
-        st.metric("Model Probability", f"{probability:.1%}")
-    
+        st.metric("Placement Readiness Score", f"{adjusted_prob:.1%}")
+
     with result_col2:
-        st.metric("Adjusted Probability", f"{adjusted_prob:.1%}")
+        st.metric("Resume Score", f"{resume_score}/100")
     
     with result_col3:
         if adjusted_prob >= 0.78:
