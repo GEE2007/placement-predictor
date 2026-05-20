@@ -538,9 +538,14 @@ for col, (label, benchmark) in zip(comparison_cols, benchmarks.items()):
         st.metric(label, f"{benchmark}/100", delta=f"{resume_score - benchmark:+.1f}")
         st.progress(min(resume_score / 100, 1.0), text=f"Your score: {resume_score:.1f}/100")
 
-    "coding_skills": skill_score_internal,
-    "certifications": certifications,
-    "aptitude_score": aptitude_score
+if predict_btn:
+    input_data = pd.DataFrame([{
+        "cgpa": cgpa,
+        "internships": internships,
+        "projects_count": projects,
+        "coding_skills": skill_score_internal,
+        "certifications": certifications,
+        "aptitude_score": aptitude_score
     }])
 
     probability = model.predict_proba(input_data)[0][1]
